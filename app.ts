@@ -3,7 +3,7 @@ require("dotenv").config();
 export const app = express();
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
+import { ErrorMiddleware } from "./middleware/error";
 //body parser-for cloudinery
 app.use(express.json({ limit: "50mb" }));
 
@@ -30,3 +30,5 @@ app.all("*", (req: Request, res: Response, next: NextFunction) => {
   const err = new Error(`route ${req.originalUrl} not found`);
   next(err);
 });
+
+app.use(ErrorMiddleware);
