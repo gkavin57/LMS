@@ -6,6 +6,7 @@ import { CatchAsyncError } from "../middleware/catchAsyncError";
 import jwt from "jsonwebtoken";
 import ejs from "ejs";
 import path from "path";
+import sendMail from "../utils/sendMail";
 //register user
 interface IRegistrationBody {
   name: string;
@@ -18,7 +19,6 @@ export const registrationUser = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, email, password } = req.body;
-
       const isEmailExist = await userModel.findOne({ email });
       if (isEmailExist) {
         return next(new ErrorHandler("Email already exist", 400));
@@ -37,14 +37,31 @@ export const registrationUser = CatchAsyncError(
       const data = {
         user: {
           name: user?.name,
+          activationCode,
         },
-        activationCode,
       };
 
       const html = await ejs.renderFile(
-        path.join(__dirname, "../mails/activation-main.ejs"),
+        path.join(__dirname, "../mails/activation-mail.ejs"),
         data
       );
+
+      try {
+        await sendMail({
+          email: user.email,
+          subject: "Activate your account",
+          template: "activation-mail.ejs",
+          data,
+        });
+
+        res.status(201).json({
+          success: true,
+          message: `Please check your mail: ${user.email} to activate your account`,
+          activationToken: activationToken.token,
+        });
+      } catch (error: any) {
+        return new ErrorHandler(error.message, 400);
+      }
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
