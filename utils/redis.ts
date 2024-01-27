@@ -9,4 +9,8 @@ const redisClient = () => {
   throw new Error("Redis connection failed");
 };
 
-export const redis = new Redis(redisClient());
+const redisOptions = {
+  maxRetriesPerRequest: 5, // Adjust this value
+};
+
+export const redis = new Redis(redisClient(), redisOptions);
