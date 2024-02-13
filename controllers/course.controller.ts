@@ -210,12 +210,11 @@ export const addQuestions = CatchAsyncError(
 
       courseContent.questions.push(newQuestion);
 
-
       await NotificationModel.create({
-        user:req?.user?._id,
-        title:"New Question Received",
-        message:`You have a new question in ${courseContent?.title}`
-      })
+        user: req?.user?._id,
+        title: "New Question Received",
+        message: `You have a new question in ${courseContent?.title}`,
+      });
 
       await course.save();
 
@@ -279,13 +278,12 @@ export const addAnswer = CatchAsyncError(
 
       if (req?.user?._id === question.user?._id) {
         //create a notification
-        
-      await NotificationModel.create({
-        user:req?.user?._id,
-        title:"New Question Reply Received",
-        message:`You have a new question in ${courseContent?.title}`
-      })
 
+        await NotificationModel.create({
+          user: req?.user?._id,
+          title: "New Question Reply Received",
+          message: `You have a new question in ${courseContent?.title}`,
+        });
       } else {
         const data = {
           name: question?.user?.name,
@@ -435,7 +433,6 @@ export const addReplyToReview = CatchAsyncError(
   }
 );
 
-
 //get all courses ---only for admin
 
 export const getAllCourse = CatchAsyncError(
@@ -444,6 +441,33 @@ export const getAllCourse = CatchAsyncError(
       getAllCourseService(res);
     } catch (error) {
       return next(new ErrorHandler(error?.message, 500));
+    }
+  }
+);
+
+//delete course --- only for admin
+
+export const deleteCourse = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req?.body;
+
+      const course = await CourseModel.findById(id);
+
+      if (!course) {
+        return next(new ErrorHandler("course not found", 404));
+      }
+
+      await course.deleteOne({ id });
+
+      await redis.del(id);
+
+      res.status(200).json({
+        success: true,
+        message: "Course deleted successfully",
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
