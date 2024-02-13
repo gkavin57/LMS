@@ -7,7 +7,7 @@ import userModel from "../models/user.model";
 import OrderModel, { IOrder } from "../models/order.model";
 import { CatchAsyncError } from "../middleware/catchAsyncError";
 import { NextFunction, Request, Response } from "express";
-import { newOrder } from "../services/order.services";
+import { getAllOrderService, newOrder } from "../services/order.services";
 import NotificationModel from "../models/notification.model";
 
 //create order
@@ -94,6 +94,19 @@ export const createOrder = CatchAsyncError(
       newOrder(data, res, next);
     } catch (error) {
       return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+
+//get all orders ---only for admin
+
+export const getAllOrders = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      getAllOrderService(res);
+    } catch (error) {
+      return next(new ErrorHandler(error?.message, 500));
     }
   }
 );
