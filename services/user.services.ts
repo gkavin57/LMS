@@ -26,3 +26,15 @@ res.status(201).json({
   users
 })
 }
+
+
+
+//update user role --- for admin
+export const updateUserRoleService = async (res:Response,id:string,role:string)=>{
+const user = await userModel?.findByIdAndUpdate(id,{role},{new:true})
+
+res.status(201).json({
+  success:true,
+  user
+})
+}
