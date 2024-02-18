@@ -13,7 +13,11 @@ import {
   sendToken,
 } from "../utils/jwt";
 import { redis } from "../utils/redis";
-import { getAllUserService, getUserById, updateUserRoleService } from "../services/user.services";
+import {
+  getAllUserService,
+  getUserById,
+  updateUserRoleService,
+} from "../services/user.services";
 import cloudinary from "cloudinary";
 //register user
 interface IRegistrationBody {
@@ -215,7 +219,9 @@ export const updateAccessToken = CatchAsyncError(
       const session = await redis.get(decoded.id as string);
 
       if (!session) {
-        return next(new ErrorHandler(message, 400));
+        return next(
+          new ErrorHandler("Please login to access this resource", 400)
+        );
       }
 
       const user = JSON.parse(session);
@@ -241,6 +247,8 @@ export const updateAccessToken = CatchAsyncError(
       res.cookie("access_token", accessToken, accessTokenOptions);
 
       res.cookie("refresh_token", refreshToken, refreshTokenOptions);
+
+      await redis.set(user._id, JSON.stringify(user), "EX", 604800); //7days for expire this data in redis
 
       res.status(200).json({
         success: true,
@@ -438,46 +446,40 @@ export const getAllUsers = CatchAsyncError(
   }
 );
 
-
-
 //update userrole ---only for admin
 
-
-export const updateUserRole = CatchAsyncError(async (req,res,next)=>{
+export const updateUserRole = CatchAsyncError(async (req, res, next) => {
   try {
-    const {id,role} = req?.body
-    updateUserRoleService(res,id,role)
+    const { id, role } = req?.body;
+    updateUserRoleService(res, id, role);
   } catch (error) {
-    return next(new ErrorHandler(error?.message,400))
+    return next(new ErrorHandler(error?.message, 400));
   }
-})
-
-
+});
 
 //delete user --- only for admin
 
-export const deleteUser = CatchAsyncError(async(req:Request,res:Response,next:NextFunction)=>{
-  try {
-    
-const {id} =  req?.body
+export const deleteUser = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req?.body;
 
-const user = await userModel.findById(id)
+      const user = await userModel.findById(id);
 
-if(!user){
-  return next(new ErrorHandler("user not found",404))
-}
+      if (!user) {
+        return next(new ErrorHandler("user not found", 404));
+      }
 
-await user.deleteOne({id})
+      await user.deleteOne({ id });
 
-await redis.del(id)
+      await redis.del(id);
 
-res.status(200).json({
-  success:true,
-  message:"User deleted successfully"
-})
-
-
-  } catch (error) {
-    return next(new ErrorHandler(error.message,500))
+      res.status(200).json({
+        success: true,
+        message: "User deleted successfully",
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
   }
-})
+);
